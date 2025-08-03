@@ -1,96 +1,74 @@
-import { initialTasks } from "./initialData.js";
-/**
- * Creates a single task DOM element.
- * @param {Object} task - Task data object.
- * @param {string} task.title - Title of the task.
- * @param {number} task.id - Unique task ID.
- * @param {string} task.status - Status column: 'todo', 'doing', or 'done'.
- * @returns {HTMLElement} The created task div element.
- */
-function createTaskElement(task) {
-  const taskDiv = document.createElement("div");
-  taskDiv.className = "task-div";
-  taskDiv.textContent = task.title;
-  taskDiv.dataset.taskId = task.id;
+// scripts/scripts.js
+import { initialData } from "./initialData.js";
+import { saveTasks, loadTasks } from "./localStorage.js";
+import { openEditModal, openNewTaskModal } from "./modal.js";
 
-  taskDiv.addEventListener("click", () => {
-    openTaskModal(task);
-  });
+let tasks = loadTasks() || initialData;
 
-  return taskDiv;
-}
+document.addEventListener("DOMContentLoaded", () => {
+  showAllTasks();
 
-/**
- * Finds the task container element based on task status.
- * @param {string} status - The task status ('todo', 'doing', or 'done').
- * @returns {HTMLElement|null} The container element, or null if not found.
- */
-function getTaskContainerByStatus(status) {
-  const column = document.querySelector(`.column-div[data-status="${status}"]`);
-  return column ? column.querySelector(".tasks-container") : null;
-}
+  const addTaskBtn = document.getElementById("add-task-btn");
+  if (addTaskBtn) {
+    addTaskBtn.addEventListener("click", () => {
+      openNewTaskModal((newTask) => {
+        tasks.push(newTask);
+        showAllTasks();
+      });
+    });
+  }
+});
 
-/**
- * Clears all existing task-divs from all task containers.
- */
-function clearExistingTasks() {
-  document.querySelectorAll(".tasks-container").forEach((container) => {
-    container.innerHTML = "";
-  });
-}
+function showAllTasks() {
+  const columns = {
+    todo: document.querySelector('[data-status="todo"] .tasks-container'),
+    doing: document.querySelector('[data-status="doing"] .tasks-container'),
+    done: document.querySelector('[data-status="done"] .tasks-container'),
+  };
 
-/**
- * Renders all tasks from initial data to the UI.
- * Groups tasks by status and appends them to their respective columns.
- * @param {Array<Object>} tasks - Array of task objects.
- */
-function renderTasks(tasks) {
+  Object.values(columns).forEach((col) => (col.innerHTML = ""));
+
   tasks.forEach((task) => {
-    const container = getTaskContainerByStatus(task.status);
-    if (container) {
-      const taskElement = createTaskElement(task);
-      container.appendChild(taskElement);
+    const div = document.createElement("div");
+    div.className = "task-div";
+    div.textContent = task.title;
+    div.onclick = () => {
+      openEditModal(task, handleSave, handleDelete);
+    };
+
+    if (columns[task.status]) {
+      columns[task.status].appendChild(div);
     }
   });
+
+  updateColumnCounts();
+  saveTasks(tasks);
 }
 
-/**
- * Opens the modal dialog with pre-filled task details.
- * @param {Object} task - The task object to display in the modal.
- */
-function openTaskModal(task) {
-  const modal = document.getElementById("task-modal");
-  const titleInput = document.getElementById("task-title");
-  const descInput = document.getElementById("task-desc");
-  const statusSelect = document.getElementById("task-status");
-
-  titleInput.value = task.title;
-  descInput.value = task.description;
-  statusSelect.value = task.status;
-
-  modal.showModal();
+function handleSave(updatedTask) {
+  const index = tasks.findIndex((t) => t.id === updatedTask.id);
+  if (index !== -1) {
+    tasks[index] = updatedTask;
+    showAllTasks();
+  }
 }
 
-/**
- * Sets up modal close behavior.
- */
-function setupModalCloseHandler() {
-  const modal = document.getElementById("task-modal");
-  const closeBtn = document.getElementById("close-modal-btn");
-
-  closeBtn.addEventListener("click", () => {
-    modal.close();
-  });
+function handleDelete(taskId) {
+  tasks = tasks.filter((t) => t.id !== taskId);
+  showAllTasks();
 }
 
-/**
- * Initializes the task board and modal handlers.
- */
-function initTaskBoard() {
-  clearExistingTasks();
-  renderTasks(initialTasks);
-  setupModalCloseHandler();
-}
+function updateColumnCounts() {
+  const countByStatus = (status) =>
+    tasks.filter((t) => t.status === status).length;
 
-// Wait until DOM is fully loaded
-document.addEventListener("DOMContentLoaded", initTaskBoard);
+  document.getElementById("toDoText").textContent = `TODO (${countByStatus(
+    "todo"
+  )})`;
+  document.getElementById("doingText").textContent = `DOING (${countByStatus(
+    "doing"
+  )})`;
+  document.getElementById("doneText").textContent = `DONE (${countByStatus(
+    "done"
+  )})`;
+}
