@@ -1,5 +1,16 @@
-// scripts/modal.js
-
+/**
+ * Opens a modal to edit an existing task.
+ * The modal HTML is created dynamically and appended to the document body.
+ * When saved or deleted, the corresponding callback functions are called.
+ *
+ * @param {Object} task - The task object to edit.
+ * @param {number} task.id - Unique identifier of the task.
+ * @param {string} task.title - Title of the task.
+ * @param {string} task.description - Description of the task.
+ * @param {string} task.status - Status of the task ("todo", "doing", or "done").
+ * @param {function(Object): void} onSave - Callback called when saving, with updated task object.
+ * @param {function(number): void} onDelete - Callback called when deleting, with task id.
+ */
 export function openEditModal(task, onSave, onDelete) {
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
@@ -55,6 +66,14 @@ export function openEditModal(task, onSave, onDelete) {
   };
 }
 
+/**
+ * Opens a modal to create a new task.
+ * The modal HTML is created dynamically and appended to the document body.
+ * When the create button is clicked, the onCreate callback is called with the new task object.
+ *
+ * @param {function(Object): void} onCreate - Callback called when a new task is created.
+ * The new task object contains id, title, description, and status properties.
+ */
 export function openNewTaskModal(onCreate) {
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
